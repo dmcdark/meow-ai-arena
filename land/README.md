@@ -33,6 +33,8 @@
 
 ## 马上玩
 
+**手动对战电脑**：在仓库根目录运行 `python3 land/play.py`，浏览器打开 <http://127.0.0.1:8765>。方向键 / WASD 操控，支持简单电脑和已编译的原版 AI bot。启动、操作及编译说明见 [`play/README.md`](play/README.md)。
+
 **看回放**：双击 `replays/index.html`，左上角下拉切换 9 局（单挑：Opus vs Sonnet、Astra vs Sonnet、MiMo vs greedy；还有 6 局混战）。
 
 **用你的 bot 挑战全部 AI**（需要 Python 3.10+ 和 g++）：
