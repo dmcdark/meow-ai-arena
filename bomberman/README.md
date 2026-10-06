@@ -32,6 +32,8 @@
 
 ## 马上玩
 
+**手动对战电脑**：在仓库根目录运行 `python3 bomberman/play.py`，浏览器打开 <http://127.0.0.1:8767>。方向键 / WASD 移动，E 放弹，空格暂停。支持简单电脑和已编译的原版 AI bot，完整步骤见 [`play/README.md`](play/README.md)。
+
 **看回放**：打开 `replays/` 里任意一个 `.html`，比如 `10p-melee.html`（十人混战）、`2p-astra-vs-opus.html`（冠亚军单挑）。
 
 **用你的 bot 挑战全部 AI**（需要 Python 3.10+ 和 g++）：

@@ -1,0 +1,243 @@
+<!doctype html>
+<html lang="zh-CN">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>手动炸弹人 · 人类 vs AI</title>
+<style>
+:root { color-scheme: light dark; --bg:#f6f5f2; --panel:#fff; --ink:#202025; --muted:#676771; --line:#dddde4; --cell:#e9e8e4; }
+@media(prefers-color-scheme:dark) { :root { --bg:#151519; --panel:#222228; --ink:#eeeef3; --muted:#aaaab6; --line:#40404b; --cell:#303039; } }
+* { box-sizing:border-box; }
+body { margin:0; background:var(--bg); color:var(--ink); font:14px/1.6 system-ui,-apple-system,"PingFang SC",sans-serif; }
+main { max-width:1100px; margin:auto; padding:24px 16px; }
+h1 { margin:0; font-size:24px; } p { color:var(--muted); }
+.layout { display:grid; grid-template-columns:minmax(0,1fr) 280px; gap:16px; }
+.card { background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:16px; }
+.setup,.controls { display:flex; flex-wrap:wrap; gap:12px; align-items:center; margin:14px 0; }
+button,select,input { font:inherit; background:var(--bg); color:var(--ink); border:1px solid var(--line); padding:7px 10px; border-radius:6px; }
+button { cursor:pointer; } button:disabled { opacity:.45; cursor:default; }
+#new { background:#2f6fdf; color:white; border-color:#2f6fdf; }
+#seed { width:120px; } #opponent { max-width:100%; }
+canvas { width:100%; display:block; background:var(--cell); border-radius:6px; outline-offset:4px; }
+#status { min-height:28px; font-weight:600; } #message { color:#d9621b; white-space:pre-wrap; overflow-wrap:anywhere; }
+.player { border-left:4px solid #2f6fdf; padding:8px 12px; margin:12px 0; } .player.enemy { border-color:#d9621b; }
+.score { font-size:26px; font-weight:700; } .small { font-size:12px; color:var(--muted); }
+#events { max-height:180px; overflow:auto; font-size:12px; color:var(--muted); }
+.pad { display:grid; grid-template-columns:repeat(3,46px); gap:6px; justify-content:center; margin:16px 0; }
+.pad button { user-select:none; -webkit-user-select:none; touch-action:manipulation; } code { overflow-wrap:anywhere; }
+@media(max-width:800px) { .layout { grid-template-columns:1fr; } }
+</style>
+</head><body><main>
+<h1>手动炸弹人 · 人类 vs AI</h1>
+<p>你是蓝色，电脑是橙色。方向键 / WASD 移动，松开停留；E 放炸弹，空格暂停 / 继续。</p>
+<div class="card">
+  <div class="setup">
+    <label>对手 <select id="opponent" aria-label="电脑对手"></select></label>
+    <label>地图种子 <input id="seed" type="number" min="0" max="2147483647" value="1000"></label>
+    <button id="new" disabled>开始新对局</button>
+  </div>
+  <div id="botHint" class="small"></div><div id="message" role="alert"></div>
+</div>
+<div class="layout" style="margin-top:16px">
+  <div class="card">
+    <div id="status" aria-live="polite">正在连接本地服务…</div>
+    <canvas id="board" width="650" height="650" tabindex="0" aria-label="炸弹人棋盘，方向键或 WASD 移动，E 放炸弹"></canvas>
+    <div class="controls">
+      <button id="pause" disabled>继续</button><button id="step" disabled>走一回合</button>
+      <button id="bomb" disabled>放炸弹（E）</button>
+      <label>速度 <select id="speed"><option value="1">1 回合/秒</option><option value="2" selected>2 回合/秒</option><option value="4">4 回合/秒</option></select></label>
+      <span id="heading" class="small"></span>
+    </div>
+    <div class="pad" aria-label="触屏方向控制">
+      <span></span><button data-dir="U" aria-label="向上">↑</button><span></span>
+      <button data-dir="L" aria-label="向左">←</button><button data-dir="D" aria-label="向下">↓</button><button data-dir="R" aria-label="向右">→</button>
+    </div>
+    <div class="small">按住方向连续移动，快速点按走一格。放弹请求在下一回合执行，先放弹再移动。炸弹数字是距引爆行动回合数。</div>
+  </div>
+  <aside class="card">
+    <div class="player"><strong>你 · 蓝色</strong><div id="humanScore" class="score">—</div><div id="humanInfo" class="small"></div></div>
+    <div class="player enemy"><strong>电脑 · 橙色</strong><div id="botScore" class="score">—</div><div id="botInfo" class="small"></div></div>
+    <div id="shrink" class="small"></div>
+    <p class="small">炸弹 4 回合后引爆，射程 3 格，火焰持续 2 回合。每人最多 2 颗在场。碰到火焰或被缩圈覆盖即淘汰，不复活。按生存分 + 0.5 × 击杀份额判胜。</p>
+    <strong>最近事件</strong><div id="events"></div>
+  </aside>
+</div></main>
+<script>
+const $ = id => document.getElementById(id);
+const arrows = {U:'↑',D:'↓',L:'←',R:'→',S:'等待'};
+const keys = {ArrowUp:'U',ArrowDown:'D',ArrowLeft:'L',ArrowRight:'R',KeyW:'U',KeyS:'D',KeyA:'L',KeyD:'R'};
+const pressed = new Map();
+let token = '', state = null, running = false, busy = false, timer = null, opponents = [], history = [];
+let tap = null, padDirection = null, queuedBomb = false;
+
+async function api(path, body) {
+  const response = await fetch(path, {method:body ? 'POST' : 'GET', cache:'no-store',
+    headers:body ? {'Content-Type':'application/json','X-Game-Token':token} : {},
+    body:body ? JSON.stringify(body) : undefined});
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.error || '请求失败');
+  return data;
+}
+function updateControls() {
+  $('new').disabled = !token || busy;
+  $('pause').disabled = !state || state.done || busy;
+  $('step').disabled = !state || state.done || running || busy;
+  $('bomb').disabled = !state || state.done;
+  $('pause').textContent = running ? '暂停' : '继续';
+  $('bomb').textContent = queuedBomb ? '已预约放弹（再次点击取消）' : '放炸弹（E）';
+}
+function setRunning(value) {
+  running = Boolean(value && state && !state.done);
+  clearTimeout(timer); timer = null;
+  updateControls();
+  if (state) draw();
+  if (running && !busy) timer = setTimeout(tick,1000 / +$('speed').value);
+}
+function clearMovement() { pressed.clear(); padDirection = null; tap = null; showHeading(); }
+function direction() { return padDirection || [...pressed.values()].at(-1) || tap || 'S'; }
+function focusBoard() { if (state) $('board').focus({preventScroll:true}); }
+function showHeading() {
+  if (state) $('heading').textContent = `下一步：${arrows[direction()]}${queuedBomb ? ' + 放弹' : ''}`;
+}
+function queueBomb() {
+  if (!state || state.done) return;
+  queuedBomb = !queuedBomb; updateControls(); showHeading();
+}
+function draw() {
+  if (!state) return;
+  const s=state, cv=$('board'), ctx=cv.getContext('2d'), n=s.config.size, c=50;
+  cv.width=n*c; cv.height=n*c;
+  const colors=['#2f6fdf','#d9621b'];
+  const flames=new Set(s.flames.map(([x,y])=>`${x},${y}`));
+  for(let y=0;y<n;y++) for(let x=0;x<n;x++) {
+    const xx=x*c, yy=y*c, cell=s.board[y][x];
+    ctx.fillStyle=cell==='#' ? '#39465a' : (x+y)%2 ? '#172436' : '#1f3046';
+    ctx.fillRect(xx,yy,c-1,c-1);
+    if(cell==='+') {
+      ctx.fillStyle='#987347';ctx.fillRect(xx+5,yy+5,c-10,c-10);
+      ctx.strokeStyle='#d0a779';ctx.lineWidth=2;ctx.strokeRect(xx+9,yy+9,c-18,c-18);
+      ctx.beginPath();ctx.moveTo(xx+9,yy+9);ctx.lineTo(xx+c-9,yy+c-9);ctx.stroke();
+    }
+    if(flames.has(`${x},${y}`)) {
+      ctx.fillStyle='#d98432';ctx.fillRect(xx+2,yy+2,c-5,c-5);
+      ctx.fillStyle='#ffcd61';ctx.fillRect(xx+c*.25,yy+4,c*.5,c-9);
+      ctx.fillRect(xx+4,yy+c*.25,c-9,c*.5);
+    }
+  }
+  for(const b of s.bombs) {
+    const x=(b.x+.5)*c,y=(b.y+.5)*c;
+    ctx.beginPath();ctx.arc(x,y,c*.34,0,Math.PI*2);ctx.fillStyle='#080d16';ctx.fill();
+    ctx.strokeStyle=colors[b.owner];ctx.lineWidth=3;ctx.stroke();
+    ctx.fillStyle='#fff';ctx.textAlign='center';ctx.textBaseline='middle';ctx.font='bold 20px sans-serif';
+    ctx.fillText(Math.max(0,b.explode_at-s.turn),x,y);
+  }
+  s.players.forEach((p,i)=>{
+    if(!p.alive) return;
+    const x=(p.x+.5)*c,y=(p.y+.5)*c;
+    ctx.fillStyle=colors[i];ctx.fillRect(x-c*.22,y-c*.22,c*.44,c*.44);
+    ctx.strokeStyle='#fff';ctx.lineWidth=2;ctx.strokeRect(x-c*.22,y-c*.22,c*.44,c*.44);
+  });
+  $('status').textContent=s.done ? `${s.result} · ${s.points[0]} : ${s.points[1]}` :
+    `${running ? '对战中' : '已暂停'} · 回合 ${s.turn} / ${s.config.max_turns} · 种子 ${s.seed}`;
+  const reasons={blast:'被火焰击中',shrink:'被缩圈淘汰',forfeit:'程序判负'};
+  ['human','bot'].forEach((name,i)=>{
+    const p=s.players[i], active=s.bombs.filter(b=>b.owner===i).length;
+    $(name+'Score').textContent=p.alive ? '存活' : '已淘汰';
+    $(name+'Info').textContent=`得分 ${s.points[i]} · 击杀份额 ${s.kill_credit[i]} · 炸弹 ${active}/${s.config.capacity} · 破箱 ${p.crates}`+
+      (p.alive ? '' : ` · ${reasons[p.reason] || p.reason}`);
+  });
+  const cfg=s.config;
+  const next=s.turn<cfg.shrink_start ? cfg.shrink_start : cfg.shrink_start+Math.ceil((s.turn-cfg.shrink_start)/cfg.shrink_every)*cfg.shrink_every;
+  $('shrink').textContent=s.done ? '对局结束。点击“开始新对局”重开。' : `下一次缩圈：行动回合 ${next}，剩余 ${Math.max(0,next-s.turn)} 回合。`;
+  showHeading();
+}
+function addEvents() {
+  const death={blast:'被火焰击中',shrink:'缩圈',forfeit:'程序判负'};
+  state.events.forEach(e=>{
+    const who=e.player===0 ? '你' : '电脑';
+    let text;
+    if(e.type==='death') text=`${who} 淘汰（${death[e.reason] || e.reason}）`;
+    if(e.type==='place') text=`${who} 放置炸弹`;
+    if(e.type==='explode') text=`${who} 的炸弹引爆`;
+    if(e.type==='shrink') text=`边界收缩至第 ${e.layer} 层`;
+    if(e.type==='blocked') text=`${who} 移动受阻`;
+    if(e.type==='kill_credit') text=`${e.victim===0 ? '你' : '电脑'} 被击杀`;
+    if(text) history.unshift(`T${state.turn-1} ${text}`);
+  });
+  history=history.slice(0,30);
+  $('events').replaceChildren(...history.map(text=>{const el=document.createElement('div');el.textContent=text;return el;}));
+}
+async function tick() {
+  if(busy || !state || state.done) return;
+  busy=true;updateControls();
+  const action={id:state.id,turn:state.turn,direction:direction(),place:queuedBomb ? 1 : 0};
+  tap=null;queuedBomb=false;updateControls();
+  try {
+    state=await api('/api/step',action);addEvents();draw();
+    if(state.failure) $('message').textContent=state.failure;
+    if(state.done) {clearMovement();queuedBomb=false;setRunning(false);}
+  } catch(e) {setRunning(false);$('message').textContent=e.message;}
+  finally {busy=false;updateControls();if(running) timer=setTimeout(tick,1000 / +$('speed').value);}
+}
+function botHint() {
+  const bot=opponents.find(o=>o.id===$('opponent').value);
+  $('botHint').textContent=!bot || bot.id==='simple' ? '简单电脑无需编译，会尝试破箱、攻击和躲避现有炸弹。' : bot.ready ?
+    '这个原版 bot 已编译，可以开始对战。' : `尚未编译。在项目目录运行：python3 bomberman/play.py --prepare-bots '${bot.id}'，完成后刷新页面。`;
+}
+$('new').onclick=async()=>{
+  if(busy) return;
+  setRunning(false);clearMovement();queuedBomb=false;busy=true;updateControls();$('message').textContent='';
+  try {
+    const seed=Number($('seed').value);
+    if(!$('seed').value || !Number.isInteger(seed) || seed<0 || seed>2147483647) throw new Error('请输入有效的地图种子。');
+    state=await api('/api/new',{opponent:$('opponent').value,seed});
+    history=[];$('events').replaceChildren();draw();focusBoard();
+    $('message').textContent='对局已准备好。按空格开始；按住方向移动，按 E 放弹。';
+  } catch(e) {$('message').textContent=e.message;}
+  finally {busy=false;updateControls();}
+};
+$('pause').onclick=()=>{setRunning(!running);focusBoard();};
+$('step').onclick=()=>{tick();focusBoard();};
+$('bomb').onclick=()=>{queueBomb();focusBoard();};
+$('speed').onchange=()=>{if(running) setRunning(true);focusBoard();};
+$('opponent').onchange=()=>{botHint();focusBoard();};
+$('seed').onchange=focusBoard;
+$('seed').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();focusBoard();}});
+document.addEventListener('focusin',e=>{
+  if(e.target.closest('input,select')) clearMovement();
+  else if(e.target.closest('button')) {pressed.clear();padDirection=null;showHeading();}
+});
+document.querySelectorAll('[data-dir]').forEach(button=>{
+  button.addEventListener('pointerdown',e=>{
+    if(!state || state.done) return;
+    e.preventDefault();button.setPointerCapture(e.pointerId);
+    padDirection=button.dataset.dir;tap=padDirection;focusBoard();showHeading();
+  });
+  const release=()=>{if(padDirection===button.dataset.dir) padDirection=null;showHeading();};
+  button.addEventListener('pointerup',release);button.addEventListener('pointercancel',release);
+  button.addEventListener('lostpointercapture',release);
+  button.onclick=e=>{if(e.detail===0){tap=button.dataset.dir;focusBoard();showHeading();}};
+});
+document.addEventListener('keydown',e=>{
+  if(e.target.closest('input,select,button') || e.ctrlKey || e.metaKey || e.altKey || !state || state.done) return;
+  if(keys[e.code]) {
+    e.preventDefault();
+    if(!e.repeat){pressed.delete(e.code);pressed.set(e.code,keys[e.code]);tap=keys[e.code];showHeading();}
+  }
+  if(e.code==='KeyE') {e.preventDefault();if(!e.repeat) queueBomb();}
+  if(e.code==='Space') {e.preventDefault();if(!e.repeat) setRunning(!running);}
+});
+document.addEventListener('keyup',e=>{if(keys[e.code]){pressed.delete(e.code);showHeading();}});
+function suspend() {clearMovement();queuedBomb=false;setRunning(false);}
+document.addEventListener('visibilitychange',()=>{if(document.hidden) suspend();});
+window.addEventListener('blur',suspend);
+window.addEventListener('pagehide',()=>{
+  if(state && token) fetch('/api/close',{method:'POST',keepalive:true,
+    headers:{'Content-Type':'application/json','X-Game-Token':token},body:JSON.stringify({id:state.id})}).catch(()=>{});
+});
+(async()=>{
+  try {
+    const config=await api('/api/config');token=config.token;opponents=config.opponents;
+    $('opponent').replaceChildren(...opponents.map(o=>{const el=document.createElement('option');el.value=o.id;el.textContent=o.name+(o.ready ? '' : '（未编译）');return el;}));
+    botHint();updateControls();$('status').textContent='选择对手后，点击“开始新对局”。';
+  } catch(e) {$('status').textContent='连接失败';$('message').textContent='请先运行 python3 bomberman/play.py，再打开它输出的本地地址。\n'+e.message;}
+})();
+</script></body></html>

@@ -21,6 +21,8 @@
 
 **想亲自操控角色与电脑对战**：安装 Python 3.10+ 后，在项目根目录运行 `python3 land/play.py`，浏览器打开 <http://127.0.0.1:8765>。方向键 / WASD 操控，支持简单电脑和已编译的原版 AI bot。完整安装、启动与编译步骤见 [手动圈地说明](land/play/README.md)。
 
+**想手动玩炸弹人**：运行 `python3 bomberman/play.py`，浏览器打开 <http://127.0.0.1:8767>。方向键 / WASD 移动，E 放弹，支持简单电脑和原版 bot，详见 [手动炸弹人说明](bomberman/play/README.md)。
+
 **想用自己的 bot 挑战 AI**：
 
 1. 装好 [Python 3.10+](https://www.python.org/downloads/) 和 C++ 编译器（g++）。Windows 推荐免安装的 [w64devkit](https://github.com/skeeto/w64devkit/releases)，解压后把 `w64devkit` 文件夹放进本仓库的 `tools/` 文件夹即可，不用改环境变量。
