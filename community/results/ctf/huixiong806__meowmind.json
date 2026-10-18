@@ -1,63 +1,63 @@
 {
- "commit": "6eece249c69e047cc83dbf862ac2332dbe1427fa",
+ "commit": "455052f952555ae975e14dd3f0132e88027239e8",
  "detail": {
   "ci95": [
-   268.5,
-   326.4
+   219.1,
+   315.9
   ],
   "field": [
    {
     "name": "GPT-6 Astra",
-    "score": 254.6
-   },
-   {
-    "name": "Fable 5.1",
-    "score": 186.2
+    "score": 273.6
    },
    {
     "name": "GPT-6.1 Sol",
-    "score": 184.6
+    "score": 166.1
    },
    {
-    "name": "Opus 5.5",
-    "score": 179.9
+    "name": "Fable 5.1",
+    "score": 161.6
    },
    {
     "name": "Sonnet 5.5",
-    "score": 163.1
+    "score": 158.4
    },
    {
     "name": "DeepSeek V4.1 Flash",
-    "score": 95.8
+    "score": 146.1
+   },
+   {
+    "name": "Opus 5.5",
+    "score": 83.9
+   },
+   {
+    "name": "Qwen 3.8 Max",
+    "score": 34.4
    },
    {
     "name": "MiMo V2.6 Pro",
-    "score": 70.6
+    "score": 29.9
    },
    {
     "name": "Kimi K3",
-    "score": 28.8
+    "score": 14.9
    },
    {
     "name": "基准",
     "score": 0.0
    },
    {
-    "name": "Qwen 3.8 Max",
-    "score": -9.8
-   },
-   {
     "name": "GLM 5.3",
-    "score": -57.4
+    "score": -60.7
    },
    {
     "name": "豆包 Seed 2.1 Turbo",
-    "score": -133.4
+    "score": -163.0
    }
   ],
   "field_size": 13,
   "games_note": "180 局",
-  "rank": 1
+  "rank": 2
  },
  "entry": "huixiong806__meowmind",
  "env": {
@@ -73,7 +73,7 @@
  },
  "mode": "quick",
  "schema": 1,
- "score": 298.0,
+ "score": 270.5,
  "status": "pass",
- "time": "2026-10-13T12:28:32Z"
+ "time": "2026-10-18T14:44:31Z"
 }

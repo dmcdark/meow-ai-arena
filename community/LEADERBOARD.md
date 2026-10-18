@@ -10,24 +10,24 @@
 
 | 名次 | 作品 | 作者 | 谁写的 | 模型 / 工具 | 实力值 | 小比赛名次 | 评测日期 |
 |---:|---|---|---|---|---:|---|---|
-| 1 | [墨痕喵](land/mohen2006__land-gpt-61-sol/) | mohen2006（[@mohen2006](https://github.com/mohen2006)） | AI 写 | gpt-6.1-sol / Codex | 337 | 1 / 13 | 2026-10-17 |
+| 1 | [墨痕喵](land/mohen2006__land-gpt-61-sol/) | mohen2006（[@mohen2006](https://github.com/mohen2006)） | AI 写 | gpt-6.1-sol / Codex | 422 | 1 / 13 | 2026-10-18 |
 
 官方选手参照：每份投稿评测时，官方选手和基准也在同一台虚拟机上打了同一轮小比赛。下表是它们在各次评测里实力值的中位数。
 
 | 官方选手 | 实力值（中位数） | 出现在几次评测里 |
 |---|---:|---:|
-| sonnet-5@claude-code | 330 | 1 |
-| gpt-6-astra@codex | 304 | 1 |
-| opus-5.5@claude-code | 216 | 1 |
-| anchor-sparring | 193 | 1 |
-| gpt-6-sol@codex | 119 | 1 |
-| mimo-2.6-pro@zcode | 97 | 1 |
+| sonnet-5@claude-code | 374 | 1 |
+| anchor-sparring | 267 | 1 |
+| gpt-6-astra@codex | 250 | 1 |
+| opus-5.5@claude-code | 240 | 1 |
+| gpt-6-sol@codex | 176 | 1 |
+| mimo-2.6-pro@zcode | 139 | 1 |
+| kimi-k3@workbuddy | 29 | 1 |
 | anchor-greedy | 0 | 1 |
-| kimi-k3@workbuddy | -16 | 1 |
-| glm-5.3@workbuddy | -32 | 1 |
-| mystery-model@zcode | -152 | 1 |
-| deepseek-4.1f@workbuddy | -166 | 1 |
-| anchor-random | -344 | 1 |
+| glm-5.3@workbuddy | -4 | 1 |
+| deepseek-4.1f@workbuddy | -122 | 1 |
+| mystery-model@zcode | -128 | 1 |
+| anchor-random | -324 | 1 |
 
 ## 第 2 集 · 炸弹人（`bomberman/`）
 
@@ -39,25 +39,25 @@
 
 | 名次 | 作品 | 作者 | 谁写的 | 模型 / 工具 | 实力值 | 小比赛名次 | 评测日期 |
 |---:|---|---|---|---|---:|---|---|
-| 1 | [弈喵（MeowMind）](ctf/huixiong806__meowmind/) | orangebird（[@huixiong806](https://github.com/huixiong806)） | 人和 AI 合写 | GPT-6.1 Sol / Codex | 298 | 1 / 13 | 2026-10-13 |
-| 2 | [Gemini 4 Argon](ctf/sugarzo__gemini-4-argon/) | sugarzo（[@sugarzo](https://github.com/sugarzo)） | AI 写 | Gemini 4 Argon / Cursor | 180 | 1 / 13 | 2026-10-17 |
+| 1 | [弈喵（MeowMind）](ctf/huixiong806__meowmind/) | orangebird（[@huixiong806](https://github.com/huixiong806)） | 人和 AI 合写 | GPT-6.1 Sol / Codex | 270 | 2 / 13 | 2026-10-18 |
+| 2 | [Gemini 4 Argon](ctf/sugarzo__gemini-4-argon/) | sugarzo（[@sugarzo](https://github.com/sugarzo)） | AI 写 | Gemini 4 Argon / Cursor | 136 | 3 / 13 | 2026-10-18 |
 
 官方选手参照：每份投稿评测时，官方选手和基准也在同一台虚拟机上打了同一轮小比赛。下表是它们在各次评测里实力值的中位数。
 
 | 官方选手 | 实力值（中位数） | 出现在几次评测里 |
 |---|---:|---:|
 | GPT-6 Astra | 215 | 2 |
-| GPT-6.1 Sol | 181 | 2 |
-| Fable 5.1 | 174 | 2 |
-| Sonnet 5.5 | 148 | 2 |
-| Opus 5.5 | 136 | 2 |
-| DeepSeek V4.1 Flash | 104 | 2 |
-| MiMo V2.6 Pro | 13 | 2 |
+| GPT-6.1 Sol | 158 | 2 |
+| Sonnet 5.5 | 146 | 2 |
+| Fable 5.1 | 125 | 2 |
+| DeepSeek V4.1 Flash | 86 | 2 |
+| Opus 5.5 | 61 | 2 |
 | 基准 | 0 | 2 |
-| Qwen 3.8 Max | -7 | 2 |
-| Kimi K3 | -27 | 2 |
-| GLM 5.3 | -62 | 2 |
-| 豆包 Seed 2.1 Turbo | -186 | 2 |
+| MiMo V2.6 Pro | -17 | 2 |
+| Kimi K3 | -17 | 2 |
+| Qwen 3.8 Max | -29 | 2 |
+| GLM 5.3 | -84 | 2 |
+| 豆包 Seed 2.1 Turbo | -205 | 2 |
 
 ## 第 5 集 · 仓储调度（`warehouse/`）
 
